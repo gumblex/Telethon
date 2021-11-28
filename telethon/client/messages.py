@@ -623,7 +623,8 @@ class MessageMethods:
             background: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
-            comment_to: 'typing.Union[int, types.Message]' = None
+            comment_to: 'typing.Union[int, types.Message]' = None,
+            send_as: 'hints.EntityLike' = "me"
     ) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
@@ -736,6 +737,9 @@ class MessageMethods:
 
                 This parameter takes precedence over ``reply_to``. If there is
                 no linked chat, `telethon.errors.sgIdInvalidError` is raised.
+            
+            send_as (`entity`):
+                As who will it be sent.
 
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
@@ -804,7 +808,8 @@ class MessageMethods:
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
-                comment_to=comment_to, background=background
+                comment_to=comment_to, background=background,
+                send_as=send_as
             )
 
         entity = await self.get_input_entity(entity)
@@ -831,7 +836,8 @@ class MessageMethods:
                     reply_to=reply_to,
                     buttons=markup,
                     formatting_entities=message.entities,
-                    schedule=schedule
+                    schedule=schedule,
+                    send_as=send_as
                 )
 
             request = functions.messages.SendMessageRequest(
@@ -845,7 +851,8 @@ class MessageMethods:
                 clear_draft=clear_draft,
                 no_webpage=not isinstance(
                     message.media, types.MessageMediaWebPage),
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as
             )
             message = message.message
         else:
@@ -866,7 +873,8 @@ class MessageMethods:
                 silent=silent,
                 background=background,
                 reply_markup=self.build_reply_markup(buttons),
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as
             )
 
         result = await self(request)
@@ -897,7 +905,8 @@ class MessageMethods:
             with_my_score: bool = None,
             silent: bool = None,
             as_album: bool = None,
-            schedule: 'hints.DateLike' = None
+            schedule: 'hints.DateLike' = None,
+            send_as: 'hints.EntityLike' = "me"
     ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
@@ -940,6 +949,9 @@ class MessageMethods:
                 If set, the message(s) won't forward immediately, and
                 instead they will be scheduled to be automatically sent
                 at a later time.
+
+            send_as (`entity`):
+                As who will it be sent.
 
         Returns
             The list of forwarded `Message <telethon.tl.custom.message.Message>`,
@@ -1009,7 +1021,8 @@ class MessageMethods:
                 silent=silent,
                 background=background,
                 with_my_score=with_my_score,
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
