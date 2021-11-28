@@ -117,7 +117,7 @@ class UploadMethods:
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None,
             ttl: int = None,
-            send_as: 'hints.EntityLike' = "me",
+            send_as: 'hints.EntityLike' = None,
             **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
@@ -423,7 +423,7 @@ class UploadMethods:
                           parse_mode=(), silent=None, schedule=None,
                           supports_streaming=None, clear_draft=None,
                           force_document=False, background=None, ttl=None,
-                          send_as: 'hints.EntityLike' = "me"):
+                          send_as: 'hints.EntityLike' = None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing

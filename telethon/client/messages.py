@@ -624,7 +624,7 @@ class MessageMethods:
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None,
-            send_as: 'hints.EntityLike' = "me"
+            send_as: 'hints.EntityLike' = None
     ) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
@@ -906,7 +906,7 @@ class MessageMethods:
             silent: bool = None,
             as_album: bool = None,
             schedule: 'hints.DateLike' = None,
-            send_as: 'hints.EntityLike' = "me"
+            send_as: 'hints.EntityLike' = None
     ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.

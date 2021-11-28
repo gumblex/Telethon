@@ -104,7 +104,7 @@ class InlineResult:
 
     async def click(self, entity=None, reply_to=None, comment_to=None,
                     silent=False, clear_draft=False, hide_via=False,
-                    background=None, send_as="me"):
+                    background=None, send_as=None):
         """
         Clicks this result and sends the associated `message`.
 
