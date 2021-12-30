@@ -6,6 +6,7 @@ import warnings
 from .. import helpers, utils, errors, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions
+from ..errors import ReactionInvalidError
 
 _MAX_CHUNK_SIZE = 100
 
@@ -1455,6 +1456,54 @@ class MessageMethods:
 
         # Pinning a message that doesn't exist would RPC-error earlier
         return self._get_response_message(request, result, entity)
+
+    # endregion
+
+    # region reactions
+
+    async def send_reaction(
+        self: 'TelegramClient',
+        entity: 'hints.EntityLike',
+        message: 'typing.Optional[hints.MessageIDLike]',
+        reaction_emojie: str = None
+    ):
+        message = utils.get_message_id(message) or 0
+        if not reaction_emojie:
+            get_default_request = functions.help.GetAppConfigRequest()
+            app_config = await self(get_default_request)
+            reaction_emojie = (
+                next(
+                    (
+                        y for y in app_config.value
+                        if "reactions_default" in y.key
+                    )
+                )
+            ).value.value
+        request = functions.messages.SendReactionRequest(
+            peer=entity,
+            msg_id=message,
+            reaction=reaction_emojie
+        )
+        try:
+            result = await self(
+                request
+            )
+        except ReactionInvalidError:
+            return "REACTION_INVALID"
+        else:
+            for update in result.updates:
+                if isinstance(update, types.UpdateMessageReactions):
+                    return update.reactions
+            return reaction_emojie
+
+    async def set_default_reaction(
+        self: 'TelegramClient',
+        reaction_emojie: str
+    ):
+        request = functions.messages.SetDefaultReactionRequest(
+            reaction=reaction_emojie
+        )
+        return await self(request)
 
     # endregion
 

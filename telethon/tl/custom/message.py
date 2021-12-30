@@ -1066,6 +1066,17 @@ class Message(ChatGetter, SenderGetter, TLObject):
             return await self._client.unpin_message(
                 await self.get_input_chat(), self.id)
 
+    async def react(self, reaction_emojie=None):
+        # TODO Constantly checking if client is a bit annoying,
+        #      maybe just make it illegal to call messages from raw API?
+        #      That or figure out a way to always set it directly.
+        if self._client:
+            return await self._client.send_reaction(
+                await self.get_input_chat(),
+                self.id,
+                reaction_emojie
+            )
+
     # endregion Public Methods
 
     # region Private Methods
