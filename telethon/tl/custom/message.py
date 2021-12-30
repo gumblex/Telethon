@@ -199,7 +199,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
             replies: Optional[types.TypeMessageReplies] = None,
 
             # For MessageAction (mandatory)
-            action: Optional[types.TypeMessageAction] = None
+            action: Optional[types.TypeMessageAction] = None,
+
+            **kwargs
     ):
         # Common properties to messages, then to service (in the order they're defined in the `.tl`)
         self.out = bool(out)
