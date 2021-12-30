@@ -195,10 +195,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
             pinned: Optional[bool] = None,
             restriction_reason: Optional[types.TypeRestrictionReason] = None,
             forwards: Optional[int] = None,
+            noforwards: bool = None,
             replies: Optional[types.TypeMessageReplies] = None,
 
             # For MessageAction (mandatory)
-            action: Optional[types.TypeMessageAction] = None
+            action: Optional[types.TypeMessageAction] = None,
+
+            **kwargs
     ):
         # Common properties to messages, then to service (in the order they're defined in the `.tl`)
         self.out = bool(out)
@@ -222,6 +225,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.entities = entities
         self.views = views
         self.forwards = forwards
+        self.noforwards = noforwards
         self.replies = replies
         self.edit_date = edit_date
         self.pinned = pinned
@@ -230,6 +234,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
         self.action = action
+        self.reactions = kwargs.pop("reactions", None)
 
         # Convenient storage for custom functions
         # TODO This is becoming a bit of bloat
@@ -1060,6 +1065,17 @@ class Message(ChatGetter, SenderGetter, TLObject):
         if self._client:
             return await self._client.unpin_message(
                 await self.get_input_chat(), self.id)
+
+    async def react(self, reaction_emojie=None):
+        # TODO Constantly checking if client is a bit annoying,
+        #      maybe just make it illegal to call messages from raw API?
+        #      That or figure out a way to always set it directly.
+        if self._client:
+            return await self._client.send_reaction(
+                await self.get_input_chat(),
+                self.id,
+                reaction_emojie
+            )
 
     # endregion Public Methods
 

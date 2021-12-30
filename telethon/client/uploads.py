@@ -117,6 +117,8 @@ class UploadMethods:
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None,
             ttl: int = None,
+            send_as: 'hints.EntityLike' = None,
+            noforwards: bool = None,
             **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
@@ -286,6 +288,12 @@ class UploadMethods:
                 Not all types of media can be used with this parameter, such
                 as text documents, which will fail with ``TtlMediaInvalidError``.
 
+            send_as (`entity`):
+                As who will it be sent.
+
+            noforwards (`bool`, optional)
+                NoInfoOnWhatThisDoesORCanTRevealWatDisDoes
+
         Returns
             The `Message <telethon.tl.custom.message.Message>` (or messages)
             containing the sent file, or messages if a list of them was passed.
@@ -365,6 +373,8 @@ class UploadMethods:
                     parse_mode=parse_mode, silent=silent, schedule=schedule,
                     supports_streaming=supports_streaming, clear_draft=clear_draft,
                     force_document=force_document, background=background,
+                    send_as=send_as,
+                    noforwards=noforwards
                 )
                 file = file[10:]
                 captions = captions[10:]
@@ -378,6 +388,8 @@ class UploadMethods:
                     video_note=video_note, buttons=buttons, silent=silent,
                     supports_streaming=supports_streaming, schedule=schedule,
                     clear_draft=clear_draft, background=background,
+                    send_as=send_as,
+                    noforwards=noforwards,
                     **kwargs
                 ))
 
@@ -407,7 +419,9 @@ class UploadMethods:
             entity, media, reply_to_msg_id=reply_to, message=caption,
             entities=msg_entities, reply_markup=markup, silent=silent,
             schedule_date=schedule, clear_draft=clear_draft,
-            background=background
+            background=background,
+            send_as=send_as,
+            noforwards=noforwards
         )
         return self._get_response_message(request, await self(request), entity)
 
@@ -415,7 +429,9 @@ class UploadMethods:
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None, schedule=None,
                           supports_streaming=None, clear_draft=None,
-                          force_document=False, background=None, ttl=None):
+                          force_document=False, background=None, ttl=None,
+                          send_as: 'hints.EntityLike' = None,
+                          noforwards=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -475,7 +491,9 @@ class UploadMethods:
         request = functions.messages.SendMultiMediaRequest(
             entity, reply_to_msg_id=reply_to, multi_media=media,
             silent=silent, schedule_date=schedule, clear_draft=clear_draft,
-            background=background
+            background=background,
+            send_as=send_as,
+            noforwards=noforwards
         )
         result = await self(request)
 

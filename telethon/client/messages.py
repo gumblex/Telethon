@@ -6,6 +6,7 @@ import warnings
 from .. import helpers, utils, errors, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions
+from ..errors import ReactionInvalidError
 
 _MAX_CHUNK_SIZE = 100
 
@@ -623,7 +624,9 @@ class MessageMethods:
             background: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
-            comment_to: 'typing.Union[int, types.Message]' = None
+            comment_to: 'typing.Union[int, types.Message]' = None,
+            send_as: 'hints.EntityLike' = None,
+            noforwards: bool = None
     ) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
@@ -736,6 +739,12 @@ class MessageMethods:
 
                 This parameter takes precedence over ``reply_to``. If there is
                 no linked chat, `telethon.errors.sgIdInvalidError` is raised.
+            
+            send_as (`entity`):
+                As who will it be sent.
+
+            noforwards (`bool`, optional)
+                NoInfoOnWhatThisDoesORCanTRevealWatDisDoes
 
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
@@ -804,7 +813,9 @@ class MessageMethods:
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
-                comment_to=comment_to, background=background
+                comment_to=comment_to, background=background,
+                send_as=send_as,
+                noforwards=noforwards
             )
 
         entity = await self.get_input_entity(entity)
@@ -831,7 +842,9 @@ class MessageMethods:
                     reply_to=reply_to,
                     buttons=markup,
                     formatting_entities=message.entities,
-                    schedule=schedule
+                    schedule=schedule,
+                    send_as=send_as,
+                    noforwards=noforwards
                 )
 
             request = functions.messages.SendMessageRequest(
@@ -845,7 +858,9 @@ class MessageMethods:
                 clear_draft=clear_draft,
                 no_webpage=not isinstance(
                     message.media, types.MessageMediaWebPage),
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as,
+                noforwards=noforwards
             )
             message = message.message
         else:
@@ -866,7 +881,9 @@ class MessageMethods:
                 silent=silent,
                 background=background,
                 reply_markup=self.build_reply_markup(buttons),
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as,
+                noforwards=noforwards
             )
 
         result = await self(request)
@@ -897,7 +914,9 @@ class MessageMethods:
             with_my_score: bool = None,
             silent: bool = None,
             as_album: bool = None,
-            schedule: 'hints.DateLike' = None
+            schedule: 'hints.DateLike' = None,
+            send_as: 'hints.EntityLike' = None,
+            noforwards: bool = None
     ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
@@ -940,6 +959,12 @@ class MessageMethods:
                 If set, the message(s) won't forward immediately, and
                 instead they will be scheduled to be automatically sent
                 at a later time.
+
+            send_as (`entity`):
+                As who will it be sent.
+
+            noforwards (`bool`, optional)
+                NoInfoOnWhatThisDoesORCanTRevealWatDisDoes
 
         Returns
             The list of forwarded `Message <telethon.tl.custom.message.Message>`,
@@ -1009,7 +1034,9 @@ class MessageMethods:
                 silent=silent,
                 background=background,
                 with_my_score=with_my_score,
-                schedule_date=schedule
+                schedule_date=schedule,
+                send_as=send_as,
+                noforwards=noforwards
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
@@ -1442,6 +1469,54 @@ class MessageMethods:
 
         # Pinning a message that doesn't exist would RPC-error earlier
         return self._get_response_message(request, result, entity)
+
+    # endregion
+
+    # region reactions
+
+    async def send_reaction(
+        self: 'TelegramClient',
+        entity: 'hints.EntityLike',
+        message: 'typing.Optional[hints.MessageIDLike]',
+        reaction_emojie: str = None
+    ):
+        message = utils.get_message_id(message) or 0
+        if not reaction_emojie:
+            get_default_request = functions.help.GetAppConfigRequest()
+            app_config = await self(get_default_request)
+            reaction_emojie = (
+                next(
+                    (
+                        y for y in app_config.value
+                        if "reactions_default" in y.key
+                    )
+                )
+            ).value.value
+        request = functions.messages.SendReactionRequest(
+            peer=entity,
+            msg_id=message,
+            reaction=reaction_emojie
+        )
+        try:
+            result = await self(
+                request
+            )
+        except ReactionInvalidError:
+            raise "REACTION_INVALID"
+        else:
+            for update in result.updates:
+                if isinstance(update, types.UpdateMessageReactions):
+                    return update.reactions
+            return reaction_emojie
+
+    async def set_default_reaction(
+        self: 'TelegramClient',
+        reaction_emojie: str
+    ):
+        request = functions.messages.SetDefaultReactionRequest(
+            reaction=reaction_emojie
+        )
+        return await self(request)
 
     # endregion
 

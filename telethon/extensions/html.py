@@ -13,7 +13,8 @@ from ..tl.types import (
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName,
     MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
-    TypeMessageEntity
+    TypeMessageEntity,
+    MessageEntitySpoiler
 )
 
 
@@ -90,6 +91,8 @@ class HTMLToTelegramParser(HTMLParser):
                     url = None
             self._open_tags_meta.popleft()
             self._open_tags_meta.appendleft(url)
+        elif tag == 'spoiler':
+            EntityType = MessageEntitySpoiler
 
         if EntityType and tag not in self._building_entities:
             self._building_entities[tag] = EntityType(
