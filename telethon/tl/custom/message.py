@@ -234,6 +234,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
         self.action = action
+        self.reactions = kwargs.pop("reactions")
 
         # Convenient storage for custom functions
         # TODO This is becoming a bit of bloat
