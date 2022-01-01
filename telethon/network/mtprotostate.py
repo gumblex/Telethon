@@ -1,12 +1,14 @@
 import os
 import struct
 import time
+import datetime
 from hashlib import sha256
 
 from ..crypto import AES
 from ..errors import SecurityError, InvalidBufferError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
+from ..tl.types import FutureSalt
 from ..tl.tlobject import TLRequest
 from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.core.gzippacked import GzipPacked
@@ -51,7 +53,8 @@ class MTProtoState:
         self.auth_key = auth_key
         self._log = loggers[__name__]
         self.time_offset = 0
-        self.salt = 0
+        self.salt = FutureSalt(0, 0, 0)
+        self.future_salts = []
 
         self.id = self._sequence = self._last_msg_id = None
         self.reset()
@@ -114,7 +117,7 @@ class MTProtoState:
         Encrypts the given message data using the current authorization key
         following MTProto 2.0 guidelines core.telegram.org/mtproto/description.
         """
-        data = struct.pack('<qq', self.salt, self.id) + data
+        data = struct.pack('<qq', self.salt.salt, self.id) + data
         padding = os.urandom(-(len(data) + 12) % 16 + 12)
 
         # Being substr(what, offset, length); x = 0 for client
@@ -204,6 +207,16 @@ class MTProtoState:
             )
 
         return self.time_offset
+
+    def rotate_salt(self):
+        if not self.future_salts:
+            return True
+        now = (datetime.datetime.now(tz=self.future_salts[0].valid_since.tzinfo) +
+               datetime.timedelta(seconds=self.time_offset))
+        if self.future_salts[0].valid_since < now:
+            self.salt = self.future_salts.pop(0)
+            return (not self.future_salts)
+        return False
 
     def _get_seq_no(self, content_related):
         """

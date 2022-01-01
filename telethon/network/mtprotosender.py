@@ -16,9 +16,9 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl.core import RpcResult, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
-from ..tl.functions import PingRequest, DestroySessionRequest
+from ..tl.functions import PingRequest, GetFutureSaltsRequest, DestroySessionRequest
 from ..tl.types import (
-    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
+    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalt, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
     MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload, DestroySessionOk, DestroySessionNone,
 )
@@ -434,6 +434,8 @@ class MTProtoSender:
         if self._ping is None:
             self._ping = rnd_id
             self.send(PingRequest(rnd_id))
+            if self._state.rotate_salt():
+                self.send(GetFutureSaltsRequest(1))
         else:
             self._start_reconnect(None)
 
@@ -681,7 +683,7 @@ class MTProtoSender:
         """
         bad_salt = message.obj
         self._log.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
-        self._state.salt = bad_salt.new_server_salt
+        self._state.salt = FutureSalt(0, 0, bad_salt.new_server_salt)
         states = self._pop_states(bad_salt.bad_msg_id)
         self._send_queue.extend(states)
 
@@ -756,7 +758,7 @@ class MTProtoSender:
         """
         # TODO https://goo.gl/LMyN7A
         self._log.debug('Handling new session created')
-        self._state.salt = message.obj.server_salt
+        self._state.salt = FutureSalt(0, 0, message.obj.server_salt)
 
     async def _handle_ack(self, message):
         """
@@ -793,6 +795,8 @@ class MTProtoSender:
         # TODO save these salts and automatically adjust to the
         # correct one whenever the salt in use expires.
         self._log.debug('Handling future salts for message %d', message.msg_id)
+        self._state.future_salts = message.obj.salts
+        self._state.rotate_salt()
         state = self._pending_state.pop(message.msg_id, None)
         if state:
             state.future.set_result(message.obj)
