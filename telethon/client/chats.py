@@ -220,6 +220,8 @@ class _ParticipantsIter(RequestIter):
                 ))).count
 
         results = await self.client(self.requests)
+        if not utils.is_list_like(results):
+            results = (results,)
         for i in reversed(range(len(self.requests))):
             participants = results[i]
             if self.total is None:
